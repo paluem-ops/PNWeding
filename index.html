@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1B6B58">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>งบงานแต่ง</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@500;700&display=swap">
+<style>
+/* Layout: sticky input panel on the left, summary + grouped cost lines on the right; stacks on phones */
+:root{
+  --bg:#F3F6F4; --surface:#FFFFFF; --fg:#16211E; --muted:#5C6B66; --line:#D9E1DD;
+  --accent:#1B6B58; --accent-soft:#DDEEE8; --gold:#A87B28; --warn:#B3261E; --warn-soft:#F8E1DE; --ok:#1B6B58;
+  --font-body:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;
+  --font-display:"Noto Serif Thai","IBM Plex Sans Thai",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1614; --surface:#16211E; --fg:#E7EFEC; --muted:#93A59F; --line:#2A3834;
+  --accent:#5FC4A6; --accent-soft:#1D332D; --gold:#D8B060; --warn:#F2897F; --warn-soft:#3A1F1C; --ok:#5FC4A6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1614; --surface:#16211E; --fg:#E7EFEC; --muted:#93A59F; --line:#2A3834;
+  --accent:#5FC4A6; --accent-soft:#1D332D; --gold:#D8B060; --warn:#F2897F; --warn-soft:#3A1F1C; --ok:#5FC4A6; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.5;
+  padding-block:0 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+*{box-sizing:border-box}
+.wrap{max-width:1080px;margin:0 auto}
+h1{font-family:var(--font-display);font-size:1.6rem;margin:0;text-wrap:balance}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);display:flex;justify-content:space-between;align-items:center;gap:8px 16px;flex-wrap:wrap;padding-block:14px 10px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.savebox{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.savestate{font-size:.84rem;color:var(--muted)}
+.savestate.dirty{color:var(--warn);font-weight:600}
+.sub{color:var(--muted);margin:4px 0 16px}
+.grid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px}
+@media(min-width:821px){.panel{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}}
+.panel h2,.sec h2{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0;font-weight:600}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.86rem;color:var(--muted)}
+input[type=number],input[type=text],input[type=email]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;min-width:0;font-variant-numeric:tabular-nums}
+input:disabled{opacity:.6}
+input[readonly]{background:var(--accent-soft);border-color:transparent;font-weight:600}
+input:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.unit{white-space:nowrap;color:var(--muted);font-size:.82rem}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer}
+.chip{background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:.84rem}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.guests{font-variant-numeric:tabular-nums;background:var(--accent-soft);border-radius:8px;padding:8px 10px;font-size:.9rem}
+.guests b{font-size:1.15rem}
+.hr{border:0;border-top:1px solid var(--line);margin:0}
+.chk{display:flex;gap:8px;align-items:center;font-size:.9rem}
+.right{display:flex;flex-direction:column;gap:18px;min-width:0}
+.sum{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.big{font-family:var(--font-display);font-size:2.2rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.big small{font-family:var(--font-body);font-size:.9rem;color:var(--muted);font-weight:400}
+.status{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.84rem;font-weight:600;background:var(--accent-soft);color:var(--ok)}
+.status.over{background:var(--warn-soft);color:var(--warn)}
+.meter{position:relative;height:12px;border-radius:6px;background:var(--line);overflow:hidden}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:6px}
+.meter.over i{background:var(--warn)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat span{color:var(--muted);font-size:.8rem}
+.stat b{font-size:1.1rem;font-variant-numeric:tabular-nums;font-weight:600}
+.note{color:var(--muted);font-size:.86rem;margin:0}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.sech{display:flex;justify-content:space-between;align-items:baseline;gap:8px 12px;flex-wrap:wrap}
+.sech .t{font-variant-numeric:tabular-nums;font-weight:600}
+.sech .t em{font-style:normal;color:var(--muted);font-weight:400;font-size:.82rem;margin-left:6px}
+.share{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.share i{display:block;height:100%;background:var(--gold)}
+
+.row{display:grid;grid-template-columns:auto minmax(0,1fr) 112px auto 92px auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.row .nm{min-width:0;display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+.row .nm input{width:100%}
+.vi{display:contents}
+.uc{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.qty{width:64px!important}
+.row .amt{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+.row.off .nm,.row.off .amt{opacity:.45}
+.row input[type=number]{padding:5px 7px}
+.row .nm input{background:transparent;border-color:transparent;padding:5px 6px}
+.row .nm input:hover,.row .nm input:focus{background:var(--bg);border-color:var(--line)}
+.subtog{background:none;border:0;color:var(--accent);font-size:.8rem;padding:0 6px;text-align:left}
+.subtog:hover{text-decoration:underline}
+.del{background:none;border:0;color:var(--muted);padding:2px 6px;font-size:1.1rem;line-height:1}
+.del:hover{color:var(--warn)}
+
+.subs{grid-column:1/-1;background:var(--bg);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;margin:2px 0 4px}
+.shead,.srow{display:grid;grid-template-columns:minmax(0,1fr) 96px 64px 92px 28px;gap:8px;align-items:center}
+.shead{font-size:.74rem;color:var(--muted);padding-inline:2px}
+.shead span:nth-child(n+2){text-align:right}
+.srow .samt{text-align:right;font-variant-numeric:tabular-nums}
+.srow input{background:var(--surface)}
+.sadd{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.sadd input[type=text]{flex:1 1 160px;width:auto}
+.sadd input[type=number]{flex:0 0 96px;width:96px}
+.stotal{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.86rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px}
+.stotal b{color:var(--fg);font-variant-numeric:tabular-nums}
+@media(max-width:560px){
+  .row{grid-template-columns:auto minmax(0,1fr) auto;row-gap:4px}
+  .vi{display:flex;gap:8px;align-items:center;flex-wrap:wrap;grid-column:2;grid-row:2}
+  .vi>input[data-f=v]{width:112px}
+  .row .amt{grid-column:3;grid-row:1}
+  .row .del{grid-column:3;grid-row:2;justify-self:end}
+  .shead{display:none}
+  .srow{grid-template-columns:1fr 1fr auto 28px}
+  .srow input[data-f=sn]{grid-column:1/-1}
+}
+
+.add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.iadd{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;padding-top:10px;border-top:1px dashed var(--line)}
+.iadd input[type=text]:first-child{flex:1 1 180px;width:auto}
+.iadd input[type=number]{flex:0 0 100px;width:100px}
+.iadd input[data-f=au]{flex:0 0 110px;width:110px}
+select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 6px;min-width:0}
+.gname{font-weight:600;font-family:var(--font-display);font-size:1rem;flex:1 1 160px;background:transparent!important;border-color:transparent!important;width:auto!important}
+.gname:hover,.gname:focus{background:var(--bg)!important;border-color:var(--line)!important}
+.btn{background:var(--accent);color:var(--surface);border:0;border-radius:6px;padding:7px 14px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:400}
+.btn.dirty{box-shadow:0 0 0 3px var(--warn-soft);outline:1px solid var(--warn)}
+.sm{padding:4px 10px;font-size:.82rem}
+.btn.warn{color:var(--warn);border-color:var(--warn)}
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+.est{font-size:.78rem;color:var(--muted)}
+[hidden]{display:none!important}
+body{margin:0}
+.authbox{max-width:420px;margin:12vh auto 0}
+.authbox .sec{gap:12px}
+.bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 12px;font-size:.88rem;color:var(--muted)}
+.bar #who{color:var(--fg);font-weight:500}
+.memlist{display:flex;gap:6px;flex-wrap:wrap}
+.mem{background:var(--accent-soft);border-radius:999px;padding:2px 10px;font-size:.84rem}
+</style>
+
+</head>
+<body>
+<div id="auth" class="authbox"><div class="sec">
+  <h1>งบงานแต่ง</h1>
+  <p class="sub">เข้าสู่ระบบด้วย Google เพื่อบันทึกข้อมูลและแชร์กับคู่ของคุณ</p>
+  <button id="loginBtn" class="btn" type="button">เข้าสู่ระบบด้วย Google</button>
+  <p class="note" id="authMsg"></p>
+</div></div>
+<div class="wrap" id="app" hidden>
+  <div class="topbar">
+    <h1>งบงานแต่ง</h1>
+    <div class="savebox"><span id="saveState" class="savestate" aria-live="polite"></span><button id="saveBtn" class="btn" type="button">บันทึกค่า</button></div>
+  </div>
+  <div class="bar"><span id="who"></span><button class="btn ghost sm" id="logoutBtn" type="button">ออกจากระบบ</button></div>
+  <p class="sub">ใส่จำนวนโต๊ะ ราคาอาหาร และงบรวม แล้วปรับรายการได้เอง กด "แจกแจงรายละเอียด" ใต้แต่ละรายการเพื่อแตกเป็นหัวข้อย่อยและให้ราคารวมคำนวณเอง</p>
+  <div class="grid">
+    <aside class="panel" aria-label="ข้อมูลงาน">
+      <h2>ข้อมูลงาน</h2>
+      <div class="chips" id="presets" role="group" aria-label="ขนาดงาน">
+        <button class="chip" data-t="20" aria-pressed="false">เล็ก 20 โต๊ะ</button>
+        <button class="chip" data-t="40" aria-pressed="true">กลาง 40 โต๊ะ</button>
+        <button class="chip" data-t="60" aria-pressed="false">ใหญ่ 60 โต๊ะ</button>
+      </div>
+      <div class="two">
+        <label class="f" for="tables">จำนวนโต๊ะ<input type="number" id="tables" min="0" inputmode="numeric"></label>
+        <label class="f" for="perTable">คนต่อโต๊ะ<input type="number" id="perTable" min="1" inputmode="numeric"></label>
+      </div>
+      <div class="guests">แขกทั้งหมด <b id="guests">0</b> คน</div>
+      <label class="f" for="budget">งบรวม (บาท)<input type="number" id="budget" min="0" inputmode="numeric"></label>
+      <hr class="hr">
+      <h2>ราคาต่อโต๊ะ</h2>
+      <div class="two">
+        <label class="f" for="food">อาหาร<input type="number" id="food" min="0" inputmode="numeric"></label>
+        <label class="f" for="drinks">เครื่องดื่ม<input type="number" id="drinks" min="0" inputmode="numeric"></label>
+      </div>
+      <p class="note" id="lockNote" hidden>ช่องที่ล็อกอยู่ คำนวณจากหัวข้อย่อยในรายการ</p>
+      <label class="f" for="cont">เงินสำรองฉุกเฉิน (% ของยอดรวม)<input type="number" id="cont" min="0" max="50" inputmode="decimal"></label>
+      <hr class="hr">
+      <h2>เงินซอง (ประมาณการ)</h2>
+      <label class="chk" for="incOn"><input type="checkbox" id="incOn"> นับเงินซองหักจากค่าใช้จ่าย</label>
+      <label class="f" for="inc">เฉลี่ยต่อแขก 1 คน (บาท)<input type="number" id="inc" min="0" inputmode="numeric"></label>
+      <button class="btn ghost" id="reset" type="button">คืนค่าเริ่มต้นทั้งหมด</button>
+    </aside>
+
+    <main class="right">
+      <section class="sum" aria-live="polite">
+        <div>
+          <div class="big"><span id="total">0</span> <small>บาท รวมทั้งหมด</small></div>
+          <div style="margin-top:6px"><span class="status" id="status"></span></div>
+        </div>
+        <div class="meter" id="meter"><i id="meterFill"></i></div>
+        <div class="stats">
+          <div class="stat"><span>งบที่ตั้งไว้</span><b id="sBudget">0</b></div>
+          <div class="stat"><span id="sDiffL">เหลือ</span><b id="sDiff">0</b></div>
+          <div class="stat"><span>ต่อโต๊ะ</span><b id="sTable">0</b></div>
+          <div class="stat"><span>ต่อแขก 1 คน</span><b id="sGuest">0</b></div>
+          <div class="stat" id="netBox" hidden><span>สุทธิหลังหักซอง</span><b id="sNet">0</b></div>
+        </div>
+        <p class="note" id="maxNote"></p>
+      </section>
+      <div id="groups" class="right"></div>
+      <section class="sec">
+        <h2>เพิ่มหมวดหมู่ใหม่</h2>
+        <form class="add" id="addForm">
+          <input type="text" id="addName" placeholder="ชื่อหมวด เช่น พรีเวดดิ้ง, ฮันนีมูน" aria-label="ชื่อหมวดใหม่">
+          <button class="btn" type="submit">เพิ่มหมวด</button>
+        </form>
+      </section>
+      <section class="sec">
+        <h2>แชร์กับคู่หรือครอบครัว</h2>
+        <div id="members" class="memlist"></div>
+        <form class="add" id="shareForm" hidden>
+          <input type="email" id="shareEmail" placeholder="อีเมล Google ของอีกฝ่าย" aria-label="อีเมลของคนที่จะแชร์ด้วย">
+          <button class="btn" type="submit">เพิ่ม</button>
+        </form>
+      </section>
+      <div class="foot"><span class="est">ราคาในหมวดอื่นนอกจากอาหารและเครื่องดื่มเป็นค่าประมาณตั้งต้น ควรเทียบกับใบเสนอราคาจริง</span></div>
+    </main>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, collection, query, where, getDocs, doc, setDoc, updateDoc, onSnapshot, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+(function(){
+var GROUPS=[
+ {id:'fb',name:'อาหารและเครื่องดื่ม'},
+ {id:'venue',name:'สถานที่และตกแต่ง'},
+ {id:'media',name:'ถ่ายภาพ ดนตรี และพิธีกร'},
+ {id:'dress',name:'ชุดและพิธีการ'},
+ {id:'gift',name:'การ์ดและของชำร่วย'},
+ {id:'other',name:'อื่นๆ'}];
+function defaults(){return {
+ groups:GROUPS.map(function(g){return {id:g.id,name:g.name}}),
+ tables:40,perTable:8,budget:420000,food:1700,drinks:300,cont:10,incOn:false,inc:800,nid:100,
+ rows:[
+  {id:'food',g:'fb',n:'อาหารโต๊ะจีน',t:'table',v:1700,on:1,lock:'food'},
+  {id:'drinks',g:'fb',n:'เครื่องดื่ม',t:'table',v:300,on:1,lock:'drinks',open:1,subs:[
+    {id:'sd1',n:'น้ำเปล่า',v:40,q:1},{id:'sd2',n:'น้ำอัดลม',v:80,q:1},{id:'sd3',n:'แอลกอฮอล์',v:180,q:1}]},
+  {id:'cake',g:'fb',n:'เค้กแต่งงานและแชมเปญทาวเวอร์',t:'fixed',v:8000,on:1},
+  {id:'room',g:'venue',n:'ค่าห้องจัดเลี้ยง / สถานที่',t:'fixed',v:40000,on:1},
+  {id:'deco',g:'venue',n:'ดอกไม้และตกแต่งฉาก',t:'fixed',v:45000,on:1},
+  {id:'arm',g:'venue',n:'ฉากสำหรับพิธีผูกแขน',t:'qty',u:'ฉาก',q:1,v:0,on:1,open:1,subs:[
+    {id:'sa1',n:'ผ้า',v:2500,q:1},{id:'sa2',n:'ดอกไม้',v:6000,q:1},{id:'sa3',n:'ป้าย',v:1500,q:1}]},
+  {id:'tflower',g:'venue',n:'ดอกไม้ตกแต่งโต๊ะ',t:'table',v:400,on:1},
+  {id:'photo',g:'media',n:'ช่างภาพและวิดีโอ',t:'fixed',v:35000,on:1},
+  {id:'mc',g:'media',n:'พิธีกร',t:'fixed',v:8000,on:1},
+  {id:'band',g:'media',n:'วงดนตรี / นักร้อง',t:'fixed',v:20000,on:1},
+  {id:'sound',g:'media',n:'แสง เสียง จอ LED',t:'fixed',v:15000,on:1},
+  {id:'outfit',g:'dress',n:'ชุดเจ้าสาวและเจ้าบ่าว',t:'fixed',v:30000,on:1},
+  {id:'mua',g:'dress',n:'แต่งหน้าทำผม',t:'fixed',v:10000,on:1},
+  {id:'rite',g:'dress',n:'พิธีเช้า (สงฆ์ ขันหมาก)',t:'fixed',v:25000,on:1},
+  {id:'card',g:'gift',n:'การ์ดเชิญ',t:'table',v:100,on:1},
+  {id:'favor',g:'gift',n:'ของชำร่วย',t:'guest',v:35,on:1},
+  {id:'misc',g:'other',n:'ค่าเดินทาง ที่พัก จิปาถะ',t:'fixed',v:10000,on:1}
+ ]};}
+var loaded=false;
+var S=defaults();
+var wid=null,db=null,me=null,dirty=false,saveT=null,saveSeq=0,members=[],ownerUid=null,unsub=null,renderedSig='';
+function sig(){return S.groups.map(function(g){return g.id}).join(',')+'|'+S.rows.map(function(r){return [r.id,r.g,r.t,(r.subs||[]).map(function(x){return x.id}).join('.')].join(':')}).join(',');}
+function setSaveState(t){var el=document.getElementById('saveState');if(el){el.textContent=t;el.className='savestate';}}
+function flush(my){
+  setDoc(doc(db,'weddings',wid),{state:S,updatedAt:serverTimestamp(),updatedBy:me.email},{merge:true})
+    .then(function(){if(my===saveSeq){dirty=false;setSaveState('บันทึกแล้ว');}})
+    .catch(function(err){setSaveState('บันทึกไม่สำเร็จ: '+(err.code||err.message));});
+}
+function save(){
+  if(!wid||!db||!me)return;
+  dirty=true;setSaveState('กำลังบันทึก…');
+  var my=++saveSeq;clearTimeout(saveT);
+  saveT=setTimeout(function(){flush(my);},600);
+}
+var $=function(i){return document.getElementById(i)};
+var isDirty=false;
+function setDirty(d){
+  isDirty=d;
+  var st=$('saveState'),bt=$('saveBtn');
+  if(st){st.textContent=d?'มีการแก้ไขที่ยังไม่บันทึก':st.getAttribute('data-ok')||'';st.className='savestate'+(d?' dirty':'');}
+  if(bt)bt.className='btn'+(d?' dirty':'');
+}
+/*COMMIT*/
+function commitNow(){
+  if(!wid||!db||!me)return;
+  dirty=true;setSaveState('กำลังบันทึก…');
+  var my=++saveSeq;clearTimeout(saveT);flush(my);
+}
+/*COMMIT*/
+function fmt(n){return Math.round(n).toLocaleString('en-US');}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]});}
+function num(x){x=parseFloat(x);return isFinite(x)&&x>0?x:0;}
+function pv(x){return x===''?0:parseFloat(x)||0;}
+var UNIT={table:'บาท/โต๊ะ',guest:'บาท/คน',fixed:'บาท'};
+function unitLabel(r){return r.t==='qty'?'บาท/'+(r.u||'หน่วย'):UNIT[r.t];}
+function hasSubs(r){return !!(r.subs&&r.subs.length);}
+function subSum(r){return (r.subs||[]).reduce(function(a,s){return a+num(s.v)*num(s.q==null?1:s.q);},0);}
+function unitPrice(r){return hasSubs(r)?subSum(r):(r.lock?S[r.lock]:r.v);}
+function mult(r,tables,guests){
+  return r.t==='table'?tables:r.t==='guest'?guests:r.t==='qty'?num(r.q==null?1:r.q):1;
+}
+function amount(r,tables,guests){
+  if(!r.on)return 0;
+  return num(unitPrice(r))*mult(r,tables,guests);
+}
+function totals(tables){
+  var guests=tables*num(S.perTable||1),sub=0,per={};
+  S.rows.forEach(function(r){var a=amount(r,tables,guests);sub+=a;per[r.id]=a;});
+  var cont=sub*num(S.cont)/100;
+  return {guests:guests,sub:sub,cont:cont,total:sub+cont,per:per};
+}
+function getRow(id){return S.rows.filter(function(x){return x.id===id})[0];}
+function getSub(r,sid){return (r.subs||[]).filter(function(x){return x.id===sid})[0];}
+function togLabel(r){
+  return (hasSubs(r)?'รายละเอียด '+r.subs.length+' รายการ':'+ แจกแจงรายละเอียด')+(r.open?' ▴':' ▾');
+}
+
+function subsHTML(r){
+  var h='<div class="subs"'+(r.open?'':' hidden')+'>';
+  if(hasSubs(r)){
+    h+='<div class="shead"><span>หัวข้อย่อย</span><span>ราคา (บาท)</span><span>× จำนวน</span><span>รวมทั้งงาน</span><span></span></div>';
+    r.subs.forEach(function(s){
+      h+='<div class="srow" data-sid="'+s.id+'">'+
+        '<input type="text" data-f="sn" value="'+esc(s.n)+'" aria-label="ชื่อหัวข้อย่อย">'+
+        '<input type="number" min="0" inputmode="numeric" data-f="sv" value="'+s.v+'" aria-label="ราคา '+esc(s.n)+'">'+
+        '<input type="number" min="0" inputmode="decimal" data-f="sq" value="'+(s.q==null?1:s.q)+'" aria-label="จำนวน '+esc(s.n)+'">'+
+        '<span class="samt">0</span>'+
+        '<button class="del" data-f="sdel" type="button" aria-label="ลบหัวข้อย่อย '+esc(s.n)+'">×</button></div>';
+    });
+    h+='<div class="stotal"><span>รวมต่อหน่วย ('+esc(unitLabel(r))+') ใช้เป็นราคาของรายการนี้</span><b><span class="stv">0</span> บาท</b></div>';
+  }
+  h+='<form class="sadd" data-r="'+r.id+'">'+
+    '<input type="text" id="sn-'+r.id+'" placeholder="หัวข้อย่อย เช่น น้ำเปล่า" aria-label="ชื่อหัวข้อย่อยใหม่">'+
+    '<input type="number" min="0" inputmode="numeric" id="sv-'+r.id+'" placeholder="ราคา" aria-label="ราคาหัวข้อย่อยใหม่">'+
+    '<input type="number" min="0" inputmode="decimal" id="sq-'+r.id+'" placeholder="จำนวน" aria-label="จำนวนหัวข้อย่อยใหม่">'+
+    '<button class="btn sm" type="submit">เพิ่มหัวข้อย่อย</button></form>';
+  return h+'</div>';
+}
+
+function rowHTML(r){
+  var hs=hasSubs(r);
+  var uc='<span class="uc"><span class="unit">'+esc(unitLabel(r))+'</span>'+
+    (r.t==='qty'?'<span class="unit">×</span><input type="number" class="qty" min="0" inputmode="decimal" data-f="q" value="'+(r.q==null?1:r.q)+'" aria-label="จำนวน'+esc(r.u||'หน่วย')+'">':'')+'</span>';
+  return '<div class="row'+(r.on?'':' off')+'" data-id="'+r.id+'">'+
+    '<input type="checkbox" data-f="on" '+(r.on?'checked':'')+' aria-label="นับรายการ '+esc(r.n)+'">'+
+    '<div class="nm"><input type="text" data-f="n" value="'+esc(r.n)+'" aria-label="ชื่อรายการ">'+
+      '<button type="button" class="subtog" data-f="tog" aria-expanded="'+(r.open?'true':'false')+'">'+togLabel(r)+'</button></div>'+
+    '<div class="vi"><input type="number" min="0" inputmode="numeric" data-f="v" aria-label="ราคา '+esc(r.n)+'" value="'+unitPrice(r)+'"'+(hs?' readonly title="คำนวณจากหัวข้อย่อย"':'')+'>'+uc+'</div>'+
+    '<div class="amt">0</div>'+
+    '<button class="del" data-f="del" type="button" aria-label="ลบรายการ '+esc(r.n)+'">×</button>'+
+    subsHTML(r)+
+  '</div>';
+}
+
+function buildGroups(){
+  var h='';
+  S.groups.forEach(function(g){
+    var rows=S.rows.filter(function(r){return r.g===g.id});
+    h+='<section class="sec" data-g="'+g.id+'"><div class="sech"><input type="text" class="gname" data-f="gn" id="gn-'+g.id+'" value="'+esc(g.name)+'" aria-label="ชื่อหมวด"><span class="t"><span class="gsum">0</span> บาท<em class="gpct"></em></span><button class="btn ghost sm" data-f="gdel" type="button">ลบหมวด</button></div><div class="share"><i class="gbar" style="width:0"></i></div>';
+    if(!rows.length)h+='<p class="note">ยังไม่มีรายการในหมวดนี้ เพิ่มได้ด้านล่าง</p>';
+    rows.forEach(function(r){h+=rowHTML(r);});
+    h+='<form class="iadd" data-g="'+g.id+'">'+
+      '<input type="text" id="in-'+g.id+'" data-f="an" placeholder="เพิ่มรายการ" aria-label="ชื่อรายการใหม่">'+
+      '<input type="number" id="iv-'+g.id+'" data-f="av" placeholder="ราคา" min="0" inputmode="numeric" aria-label="ราคา">'+
+      '<select id="it-'+g.id+'" data-f="at" aria-label="หน่วย"><option value="fixed">บาท</option><option value="table">บาท/โต๊ะ</option><option value="guest">บาท/คน</option><option value="qty">บาท/หน่วยอื่น…</option></select>'+
+      '<input type="text" id="iu-'+g.id+'" data-f="au" placeholder="ชื่อหน่วย เช่น ฉาก" aria-label="ชื่อหน่วย" hidden>'+
+      '<button class="btn sm" type="submit">เพิ่ม</button></form>';
+    h+='</section>';
+  });
+  $('groups').innerHTML=h;
+  renderedSig=sig();
+}
+
+function normalize(){
+  S.rows.forEach(function(r){if(r.lock&&hasSubs(r))S[r.lock]=subSum(r);});
+}
+
+function update(){
+  normalize();
+  var tables=num(S.tables),T=totals(tables),budget=num(S.budget);
+  $('guests').textContent=fmt(T.guests);
+  $('total').textContent=fmt(T.total);
+  $('sBudget').textContent=fmt(budget);
+  var diff=budget-T.total,over=diff<0;
+  $('sDiffL').textContent=over?'เกินงบ':'เหลือ';
+  $('sDiff').textContent=fmt(Math.abs(diff));
+  $('sDiff').style.color=over?'var(--warn)':'';
+  $('status').textContent=over?'เกินงบ '+fmt(-diff)+' บาท':(budget?'อยู่ในงบ':'ยังไม่ได้ตั้งงบ');
+  $('status').className='status'+(over?' over':'');
+  var pct=budget?Math.min(100,T.total/budget*100):0;
+  $('meterFill').style.width=pct+'%';
+  $('meter').className='meter'+(over?' over':'');
+  $('sTable').textContent=tables?fmt(T.total/tables):'-';
+  $('sGuest').textContent=T.guests?fmt(T.total/T.guests):'-';
+  var inc=S.incOn?num(S.inc)*T.guests:0;
+  $('netBox').hidden=!S.incOn;
+  if(S.incOn)$('sNet').textContent=fmt(T.total-inc);
+  var best=0;
+  if(budget){for(var t=1;t<=600;t++){if(totals(t).total<=budget)best=t;else break;}}
+  $('maxNote').textContent=budget?(best?'ด้วยรายการปัจจุบัน งบนี้รองรับได้สูงสุดประมาณ '+best+' โต๊ะ ('+fmt(best*num(S.perTable||1))+' คน)':'งบนี้ไม่พอแม้ที่ 1 โต๊ะ ลองลดรายการค่าคงที่'):'';
+  var gt={};
+  S.rows.forEach(function(r){gt[r.g]=(gt[r.g]||0)+T.per[r.id];});
+  document.querySelectorAll('.row').forEach(function(el){
+    var id=el.getAttribute('data-id'),r=getRow(id);if(!r)return;
+    el.querySelector('.amt').textContent=fmt(T.per[id]||0);
+    el.className='row'+(r.on?'':' off');
+    var vi=el.querySelector('input[data-f="v"]');
+    if(hasSubs(r)){vi.value=unitPrice(r);vi.readOnly=true;}else vi.readOnly=false;
+    var m=mult(r,tables,T.guests);
+    el.querySelectorAll('.srow').forEach(function(sr){
+      var s=getSub(r,sr.getAttribute('data-sid'));if(!s)return;
+      sr.querySelector('.samt').textContent=fmt(num(s.v)*num(s.q==null?1:s.q)*m);
+    });
+    var stv=el.querySelector('.stv');if(stv)stv.textContent=fmt(unitPrice(r));
+  });
+  document.querySelectorAll('.sec[data-g]').forEach(function(el){
+    var g=el.getAttribute('data-g'),v=gt[g]||0;
+    el.querySelector('.gsum').textContent=fmt(v);
+    el.querySelector('.gpct').textContent=T.total?(v/T.total*100).toFixed(0)+'%':'';
+    el.querySelector('.gbar').style.width=(T.total?v/T.total*100:0)+'%';
+  });
+  document.querySelectorAll('#presets .chip').forEach(function(b){b.setAttribute('aria-pressed',String(+b.getAttribute('data-t')===tables));});
+  syncInputs();
+}
+
+function syncInputs(){
+  var locked=false;
+  ['tables','perTable','budget','food','drinks','cont','inc'].forEach(function(k){
+    var el=$(k);if(document.activeElement!==el)el.value=S[k];
+    if(k==='food'||k==='drinks'){
+      var r=getRow(k),lk=!!(r&&r.lock===k&&hasSubs(r));
+      el.disabled=lk;if(lk)locked=true;
+    }
+  });
+  $('lockNote').hidden=!locked;
+  $('incOn').checked=!!S.incOn;
+}
+
+['tables','perTable','budget','food','drinks','cont','inc'].forEach(function(k){
+  $(k).addEventListener('input',function(){
+    S[k]=pv(this.value);
+    if(k==='food'||k==='drinks'){
+      var row=document.querySelector('.row[data-id="'+k+'"] input[data-f="v"]');
+      if(row&&document.activeElement!==row)row.value=S[k];
+    }
+    save();update();
+  });
+});
+$('incOn').addEventListener('change',function(){S.incOn=this.checked;save();update();});
+$('presets').addEventListener('click',function(e){
+  var b=e.target.closest('.chip');if(!b)return;
+  S.tables=+b.getAttribute('data-t');save();update();
+});
+
+$('groups').addEventListener('input',function(e){
+  var t=e.target,f=t.getAttribute('data-f'),row=t.closest('.row'),sec=t.closest('.sec');
+  if(f==='gn'){
+    var g=S.groups.filter(function(x){return x.id===sec.getAttribute('data-g')})[0];
+    if(g){g.name=t.value;save();}
+    return;
+  }
+  if(!row)return;
+  var r=getRow(row.getAttribute('data-id'));if(!r)return;
+  if(f==='n'){r.n=t.value;save();return;}
+  if(f==='q'){r.q=pv(t.value);save();update();return;}
+  if(f==='sn'||f==='sv'||f==='sq'){
+    var s=getSub(r,t.closest('.srow').getAttribute('data-sid'));if(!s)return;
+    if(f==='sn')s.n=t.value;else if(f==='sv')s.v=pv(t.value);else s.q=pv(t.value);
+    save();update();return;
+  }
+  if(f==='v'){
+    if(t.readOnly)return;
+    var v=pv(t.value);
+    if(r.lock)S[r.lock]=v;else r.v=v;
+    save();update();
+  }
+});
+$('groups').addEventListener('change',function(e){
+  var t=e.target,f=t.getAttribute('data-f');
+  if(f==='on'){
+    var r=getRow(t.closest('.row').getAttribute('data-id'));
+    r.on=t.checked?1:0;save();update();
+  }else if(f==='at'){
+    var u=t.closest('form').querySelector('[data-f="au"]');
+    u.hidden=t.value!=='qty';
+  }
+});
+$('groups').addEventListener('click',function(e){
+  var b=e.target.closest('button'),f=b&&b.getAttribute('data-f');
+  if(!f)return;
+  if(f==='tog'){
+    var row=b.closest('.row'),r=getRow(row.getAttribute('data-id'));
+    r.open=r.open?0:1;
+    row.querySelector('.subs').hidden=!r.open;
+    b.setAttribute('aria-expanded',String(!!r.open));
+    b.textContent=togLabel(r);
+  }else if(f==='del'){
+    var id=b.closest('.row').getAttribute('data-id');
+    S.rows=S.rows.filter(function(x){return x.id!==id});
+    save();buildGroups();update();
+  }else if(f==='sdel'){
+    var rowEl=b.closest('.row'),rr=getRow(rowEl.getAttribute('data-id')),sid=b.closest('.srow').getAttribute('data-sid');
+    var prev=unitPrice(rr);
+    rr.subs=rr.subs.filter(function(x){return x.id!==sid});
+    if(!rr.subs.length){if(rr.lock)S[rr.lock]=prev;else rr.v=prev;}
+    save();buildGroups();update();
+  }else if(f==='gdel'){
+    var gid=b.closest('.sec').getAttribute('data-g');
+    var has=S.rows.some(function(x){return x.g===gid});
+    if(has&&!b.getAttribute('data-armed')){
+      b.setAttribute('data-armed','1');b.textContent='ยืนยันลบพร้อมรายการ';b.classList.add('warn');
+      setTimeout(function(){if(b.isConnected){b.removeAttribute('data-armed');b.textContent='ลบหมวด';b.classList.remove('warn');}},3500);
+      return;
+    }
+    S.groups=S.groups.filter(function(x){return x.id!==gid});
+    S.rows=S.rows.filter(function(x){return x.g!==gid});
+    save();buildGroups();update();
+  }
+});
+$('groups').addEventListener('submit',function(e){
+  e.preventDefault();
+  var form=e.target;
+  if(form.classList.contains('sadd')){
+    var rid=form.getAttribute('data-r'),r=getRow(rid);
+    var n=$('sn-'+rid).value.trim();if(!n||!r)return;
+    var qv=$('sq-'+rid).value;
+    S.nid=(S.nid||100)+1;
+    if(!r.subs)r.subs=[];
+    r.subs.push({id:'s'+S.nid,n:n,v:pv($('sv-'+rid).value),q:qv===''?1:pv(qv)});
+    r.open=1;
+    save();buildGroups();update();
+    var nx=$('sn-'+rid);if(nx)nx.focus();
+    return;
+  }
+  var gid=form.getAttribute('data-g');
+  var name=$('in-'+gid).value.trim();if(!name)return;
+  S.nid=(S.nid||100)+1;
+  var t=$('it-'+gid).value,row={id:'c'+S.nid,g:gid,n:name,t:t,v:pv($('iv-'+gid).value),on:1};
+  if(t==='qty'){row.u=$('iu-'+gid).value.trim()||'หน่วย';row.q=1;}
+  S.rows.push(row);
+  save();buildGroups();update();
+  var nx2=$('in-'+gid);if(nx2)nx2.focus();
+});
+$('addForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  var n=$('addName').value.trim();if(!n)return;
+  S.nid=(S.nid||100)+1;
+  S.groups.push({id:'g'+S.nid,name:n});
+  $('addName').value='';
+  save();buildGroups();update();
+  var el=$('in-g'+S.nid);if(el)el.scrollIntoView({block:'center'});
+});
+$('reset').addEventListener('click',function(){
+  S=defaults();save();buildGroups();update();
+});
+$('saveBtn').addEventListener('click',commitNow);
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&(e.key==='s'||e.key==='S')){e.preventDefault();commitNow();}
+});
+window.addEventListener('beforeunload',function(e){if(isDirty){e.preventDefault();e.returnValue='';}});
+
+buildGroups();update();
+var st0=$('saveState');
+if(st0){st0.setAttribute('data-ok',loaded?'โหลดค่าที่บันทึกไว้แล้ว':'ค่าเริ่มต้น ยังไม่เคยบันทึก');setDirty(false);}
+
+/* ---------- Firebase ---------- */
+var authBox=$('auth'),appEl=$('app'),msg=$('authMsg');
+var cfgOk=firebaseConfig&&firebaseConfig.apiKey&&firebaseConfig.apiKey.indexOf('YOUR_')!==0;
+if(!cfgOk){msg.textContent='ยังไม่ได้ใส่ค่า firebaseConfig ในไฟล์ firebase-config.js';$('loginBtn').disabled=true;return;}
+var app=initializeApp(firebaseConfig),auth=getAuth(app);
+db=getFirestore(app);
+
+function patchValues(){
+  S.groups.forEach(function(g){var el=$('gn-'+g.id);if(el&&document.activeElement!==el)el.value=g.name;});
+  document.querySelectorAll('.row').forEach(function(rowEl){
+    var r=S.rows.filter(function(x){return x.id===rowEl.getAttribute('data-id')})[0];if(!r)return;
+    var n=rowEl.querySelector('[data-f="n"]'),v=rowEl.querySelector('[data-f="v"]'),c=rowEl.querySelector('[data-f="on"]');
+    if(n&&document.activeElement!==n)n.value=r.n;
+    if(v&&document.activeElement!==v)v.value=r.lock?S[r.lock]:r.v;
+    if(c)c.checked=!!r.on;
+    var q=rowEl.querySelector('[data-f="q"]');if(q&&document.activeElement!==q)q.value=r.q==null?1:r.q;
+    rowEl.querySelectorAll('.srow').forEach(function(sr){
+      var sub=(r.subs||[]).filter(function(x){return x.id===sr.getAttribute('data-sid')})[0];if(!sub)return;
+      var sn=sr.querySelector('[data-f="sn"]'),sv=sr.querySelector('[data-f="sv"]'),sq=sr.querySelector('[data-f="sq"]');
+      if(sn&&document.activeElement!==sn)sn.value=sub.n;
+      if(sv&&document.activeElement!==sv)sv.value=sub.v;
+      if(sq&&document.activeElement!==sq)sq.value=sub.q==null?1:sub.q;
+    });
+  });
+}
+function applyRemote(st){
+  if(!st||!st.rows)return;
+  if(JSON.stringify(st)===JSON.stringify(S))return;
+  S=st;if(!S.groups)S.groups=defaults().groups;
+  if(sig()!==renderedSig)buildGroups();else patchValues();
+  syncInputs();update();
+}
+function renderMembers(){
+  var isOwner=!!me&&ownerUid===me.uid;
+  $('members').innerHTML=members.map(function(m){
+    return '<span class="mem">'+esc(m)+(isOwner&&m!==(me.email||'').toLowerCase()?' <button type="button" class="del" data-m="'+esc(m)+'" aria-label="เอา '+esc(m)+' ออก">×</button>':'')+'</span>';
+  }).join('');
+  $('shareForm').hidden=!isOwner;
+}
+function listen(){
+  if(unsub)unsub();
+  unsub=onSnapshot(doc(db,'weddings',wid),function(snap){
+    if(!snap.exists())return;
+    var d=snap.data();
+    members=d.memberEmails||[];ownerUid=d.ownerUid;renderMembers();
+    if(snap.metadata.hasPendingWrites||dirty)return;
+    applyRemote(d.state);
+    setSaveState('ซิงก์แล้ว');
+  },function(err){setSaveState('อ่านข้อมูลไม่ได้: '+(err.code||err.message));});
+}
+async function openWedding(user){
+  var email=(user.email||'').toLowerCase();
+  var snap=await getDocs(query(collection(db,'weddings'),where('memberEmails','array-contains',email)));
+  var pick=null;
+  snap.forEach(function(d){if(!pick||(d.data().ownerUid!==user.uid&&pick.data().ownerUid===user.uid))pick=d;});
+  if(pick){wid=pick.id;}
+  else{
+    S=defaults();
+    var ref=doc(collection(db,'weddings'));
+    await setDoc(ref,{ownerUid:user.uid,memberEmails:[email],state:S,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),updatedBy:email});
+    wid=ref.id;
+  }
+  listen();
+}
+$('loginBtn').addEventListener('click',function(){
+  signInWithPopup(auth,new GoogleAuthProvider()).catch(function(err){msg.textContent='เข้าสู่ระบบไม่สำเร็จ: '+(err.code||err.message);});
+});
+$('logoutBtn').addEventListener('click',function(){signOut(auth);});
+$('shareForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  var em=$('shareEmail').value.trim().toLowerCase();if(!em||!wid)return;
+  updateDoc(doc(db,'weddings',wid),{memberEmails:arrayUnion(em)}).then(function(){$('shareEmail').value='';})
+    .catch(function(err){setSaveState('เพิ่มไม่สำเร็จ: '+(err.code||err.message));});
+});
+$('members').addEventListener('click',function(e){
+  var b=e.target.closest('button[data-m]');if(!b||!wid)return;
+  updateDoc(doc(db,'weddings',wid),{memberEmails:arrayRemove(b.getAttribute('data-m'))})
+    .catch(function(err){setSaveState('เอาออกไม่สำเร็จ: '+(err.code||err.message));});
+});
+onAuthStateChanged(auth,function(user){
+  if(!user){
+    me=null;wid=null;if(unsub){unsub();unsub=null;}
+    appEl.hidden=true;authBox.hidden=false;return;
+  }
+  me=user;authBox.hidden=true;appEl.hidden=false;$('who').textContent=user.email;
+  openWedding(user).catch(function(err){setSaveState('เปิดข้อมูลไม่ได้: '+(err.code||err.message));});
+});
+})();
+</script>
+</body>
+</html>

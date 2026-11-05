@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function isMember(data) {
+      return request.auth.token.email.lower() in data.memberEmails;
+    }
+
+    match /weddings/{wid} {
+      allow read: if signedIn() && isMember(resource.data);
+
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && isMember(request.resource.data);
+
+      // สมาชิกแก้ข้อมูลงบได้ แต่เฉพาะเจ้าของเท่านั้นที่เพิ่ม/ลบสมาชิกได้
+      allow update: if signedIn()
+        && isMember(resource.data)
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && (request.resource.data.memberEmails == resource.data.memberEmails
+            || request.auth.uid == resource.data.ownerUid);
+
+      allow delete: if signedIn() && request.auth.uid == resource.data.ownerUid;
+    }
+  }
+}

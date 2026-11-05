@@ -1,0 +1,9 @@
+# ไม่มีขั้นตอน build เป็นเว็บ static ล้วน
+[build]
+  publish = "."
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
+    X-Content-Type-Options = "nosniff"
